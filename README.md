@@ -2,7 +2,7 @@
 
 An end-to-end demo for processing, parsing, and extracting structured insights from legal documents at scale using Databricks AI Functions (`ai_document_parse`, `ai_query`), Unity Catalog, and Databricks Apps.
 
-**Live App**: [legal-doc-processor](https://legal-doc-processor-7474657121703767.aws.databricksapps.com)
+![App Demo](docs/demo.gif)
 
 ## Architecture
 
