@@ -1,13 +1,26 @@
-"""Create Lakeview AI/BI Dashboard for Legal Document Intelligence.
+"""Create AI/BI (Lakeview) Dashboard for Legal Document Intelligence.
 
 Designed for paralegals and attorneys — every widget answers a question
 a legal professional would actually ask.
+
+Usage:
+    # Generate JSON payload, then create via API:
+    python scripts/create_lakeview_dashboard.py | \
+      databricks api post /api/2.0/lakeview/dashboards --profile <profile> --json @-
+
+    # Or with env vars for custom catalog/schema:
+    CATALOG=my_catalog SCHEMA=my_schema WAREHOUSE_ID=abc123 \
+      python scripts/create_lakeview_dashboard.py
 """
 import json
+import os
 import uuid
 
-CATALOG = "classic_stable_tetifz_catalog"
-SCHEMA = "legal_docs"
+CATALOG = os.environ.get("CATALOG", "classic_stable_tetifz_catalog")
+SCHEMA = os.environ.get("SCHEMA", "legal_docs")
+WAREHOUSE_ID = os.environ.get("WAREHOUSE_ID", "d09c046d71503257")
+PARENT_PATH = os.environ.get("PARENT_PATH", "/Users/maksim.nikiforov@databricks.com")
+
 T_KEY = f"{CATALOG}.{SCHEMA}.extracted_key_info"
 T_SUB = f"{CATALOG}.{SCHEMA}.extracted_subpoenas"
 T_INV = f"{CATALOG}.{SCHEMA}.extracted_invoices"
@@ -31,9 +44,9 @@ def bar(dataset, x, y, title, color="#FFAB00", sort="y-reversed", x_label=None, 
     return {
         "name": uid(),
         "queries": [{"name": "main_query", "query": {"datasetName": dataset, "fields": [
-            {"name": x, "expression": f"`{x}`"},
-            {"name": y, "expression": f"`{y}`"}
-        ], "disaggregated": True}}],
+            {"name": x, "expression": f"`{x}`", "displayName": x_label or x},
+            {"name": y, "expression": f"`{y}`", "displayName": y_label or y}
+        ], "disaggregated": False}}],
         "spec": {"version": 3, "widgetType": "bar", "encodings": {
             "x": {"fieldName": x, "scale": {"type": "categorical", "sort": {"by": sort}}, "displayName": x_label or x},
             "y": {"fieldName": y, "scale": {"type": "quantitative"}, "displayName": y_label or y},
@@ -46,9 +59,9 @@ def pie(dataset, angle_field, color_field, title):
     return {
         "name": uid(),
         "queries": [{"name": "main_query", "query": {"datasetName": dataset, "fields": [
-            {"name": angle_field, "expression": f"`{angle_field}`"},
-            {"name": color_field, "expression": f"`{color_field}`"}
-        ], "disaggregated": True}}],
+            {"name": angle_field, "expression": f"`{angle_field}`", "displayName": "Count"},
+            {"name": color_field, "expression": f"`{color_field}`", "displayName": color_field.replace("_", " ").title()}
+        ], "disaggregated": False}}],
         "spec": {"version": 3, "widgetType": "pie", "encodings": {
             "angle": {"fieldName": angle_field, "scale": {"type": "quantitative"}, "displayName": "Count"},
             "color": {"fieldName": color_field, "scale": {"type": "categorical"}, "displayName": color_field.replace("_", " ").title()}
@@ -57,11 +70,17 @@ def pie(dataset, angle_field, color_field, title):
 
 
 def table(dataset, columns, title):
-    fields = [{"name": c["fieldName"], "expression": f'`{c["fieldName"]}`'} for c in columns]
+    fields = [{"name": c["fieldName"], "expression": f'`{c["fieldName"]}`', "displayName": c.get("title", c["fieldName"])} for c in columns]
+    cols_with_display = []
+    for c in columns:
+        col_def = dict(c)
+        if "displayName" not in col_def:
+            col_def["displayName"] = col_def.get("title", col_def["fieldName"])
+        cols_with_display.append(col_def)
     return {
         "name": uid(),
         "queries": [{"name": "main_query", "query": {"datasetName": dataset, "fields": fields, "disaggregated": True}}],
-        "spec": {"version": 1, "widgetType": "table", "encodings": {"columns": columns}, "frame": {"showTitle": True, "title": title}}
+        "spec": {"version": 2, "widgetType": "table", "encodings": {"columns": cols_with_display}, "frame": {"showTitle": True, "title": title}}
     }
 
 
@@ -119,8 +138,6 @@ def build_dashboard():
        f"SELECT file_name, case_number, court_jurisdiction, requesting_party, responding_party, production_deadline, preservation_required, data_custodians FROM {T_SUB} ORDER BY production_deadline")
     ds("sub_by_court",
        f"SELECT court_jurisdiction, COUNT(*) as cnt FROM {T_SUB} GROUP BY court_jurisdiction ORDER BY cnt DESC")
-    ds("sub_custodians",
-       f"SELECT data_custodians as custodian, COUNT(*) as matters FROM {T_SUB} WHERE data_custodians IS NOT NULL AND data_custodians != '' GROUP BY data_custodians ORDER BY matters DESC LIMIT 10")
     ds("sub_preservation",
        f"SELECT preservation_required, COUNT(*) as cnt FROM {T_SUB} GROUP BY preservation_required")
 
@@ -151,8 +168,6 @@ def build_dashboard():
        f"SELECT file_name, document_type, governing_law, non_compete_duration, confidentiality_period, termination_notice_period, risk_flags FROM {T_KEY} ORDER BY file_name")
     ds("noncompete_by_law",
        f"SELECT governing_law, COUNT(*) as cnt FROM {T_KEY} WHERE non_compete_duration IS NOT NULL AND non_compete_duration != '' AND governing_law IS NOT NULL GROUP BY governing_law ORDER BY cnt DESC")
-    ds("obligations_risk",
-       f"SELECT file_name, document_type, key_obligations, risk_flags FROM {T_KEY} WHERE risk_flags IS NOT NULL AND risk_flags != '' ORDER BY file_name")
     ds("dollar_exposure",
        f"SELECT file_name, document_type, key_dollar_amounts, governing_law FROM {T_KEY} WHERE key_dollar_amounts IS NOT NULL AND key_dollar_amounts != '' ORDER BY file_name")
 
@@ -270,8 +285,8 @@ def build_dashboard():
 if __name__ == "__main__":
     payload = {
         "display_name": "Legal Document Intelligence Analytics",
-        "warehouse_id": "d09c046d71503257",
-        "parent_path": "/Users/maksim.nikiforov@databricks.com",
+        "warehouse_id": WAREHOUSE_ID,
+        "parent_path": PARENT_PATH,
         "serialized_dashboard": build_dashboard()
     }
     print(json.dumps(payload))

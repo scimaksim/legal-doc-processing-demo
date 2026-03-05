@@ -167,6 +167,18 @@ databricks bundle run setup_legal_docs
 
 # Deploy the app
 databricks bundle run legal_doc_processor
+
+# Create AI/BI Dashboard
+python scripts/create_lakeview_dashboard.py | \
+  databricks api post /api/2.0/lakeview/dashboards --json @-
+# Then publish it:
+databricks api post /api/2.0/lakeview/dashboards/<dashboard_id>/published \
+  --json '{"warehouse_id":"your_warehouse_id","embed_credentials":true}'
+
+# Create Genie Space (two-step process)
+python scripts/create_genie_space.py --profile <profile>
+python scripts/create_genie_space.py --profile <profile> --update <space_id>
+# Update databricks.yml genie_space_id and redeploy
 ```
 
 ### Grant App Access
@@ -178,6 +190,7 @@ After deployment, grant the app's service principal access to the data:
 -- databricks apps get legal-doc-processor
 GRANT USE CATALOG ON CATALOG your_catalog TO `<sp_client_id>`;
 GRANT USE SCHEMA, SELECT, MODIFY ON SCHEMA your_catalog.legal_docs TO `<sp_client_id>`;
+GRANT USE SCHEMA, SELECT, MODIFY ON SCHEMA your_catalog.legal_ops TO `<sp_client_id>`;
 GRANT READ VOLUME, WRITE VOLUME ON VOLUME your_catalog.legal_docs.raw_documents TO `<sp_client_id>`;
 ```
 
