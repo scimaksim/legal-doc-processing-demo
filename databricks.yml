@@ -1,0 +1,87 @@
+bundle:
+  name: legal-doc-processing
+
+variables:
+  catalog:
+    description: Unity Catalog catalog name
+    default: classic_stable_tetifz_catalog
+  schema:
+    description: Schema for legal docs tables and volumes
+    default: legal_docs
+  warehouse_id:
+    description: SQL warehouse ID for queries
+    default: d09c046d71503257
+
+sync:
+  include:
+    - app/frontend/dist/**
+
+resources:
+  apps:
+    legal_doc_processor:
+      name: legal-doc-processor
+      description: Legal document processing demo using ai_document_parse and ai_query
+      source_code_path: ./app
+      config:
+        command:
+          - python
+          - app.py
+        env:
+          - name: DATABRICKS_WAREHOUSE_ID
+            value_from: sql-warehouse
+          - name: CATALOG
+            value: ${var.catalog}
+          - name: SCHEMA
+            value: ${var.schema}
+      resources:
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+      permissions:
+        - user_name: maksim.nikiforov@databricks.com
+          level: CAN_MANAGE
+
+  jobs:
+    setup_legal_docs:
+      name: "[${bundle.target}] Legal Docs - Setup Pipeline"
+      tasks:
+        - task_key: create_schema
+          notebook_task:
+            notebook_path: ./notebooks/01_setup.py
+          environment_key: default
+        - task_key: generate_and_upload_docs
+          depends_on:
+            - task_key: create_schema
+          notebook_task:
+            notebook_path: ./notebooks/02_generate_docs.py
+          environment_key: default
+        - task_key: parse_documents
+          depends_on:
+            - task_key: generate_and_upload_docs
+          notebook_task:
+            notebook_path: ./notebooks/03_parse_documents.py
+          environment_key: default
+        - task_key: extract_elements
+          depends_on:
+            - task_key: parse_documents
+          notebook_task:
+            notebook_path: ./notebooks/04_extract_elements.py
+          environment_key: default
+        - task_key: extract_key_info
+          depends_on:
+            - task_key: extract_elements
+          notebook_task:
+            notebook_path: ./notebooks/05_extract_key_info.py
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            client: "2"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://fevm-classic-stable-tetifz.cloud.databricks.com

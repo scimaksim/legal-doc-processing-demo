@@ -4,8 +4,8 @@ from databricks.sdk import WorkspaceClient
 
 IS_DATABRICKS_APP = bool(os.environ.get("DATABRICKS_APP_NAME"))
 
-CATALOG = "classic_stable_tetifz_catalog"
-SCHEMA = "legal_docs"
+CATALOG = os.environ.get("CATALOG", "classic_stable_tetifz_catalog")
+SCHEMA = os.environ.get("SCHEMA", "legal_docs")
 ELEMENTS_TABLE = f"{CATALOG}.{SCHEMA}.document_elements"
 PARSED_TABLE = f"{CATALOG}.{SCHEMA}.parsed_documents"
 RAW_VOLUME = f"/Volumes/{CATALOG}/{SCHEMA}/raw_documents"
