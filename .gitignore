@@ -1,0 +1,9 @@
+node_modules/
+*.pyc
+__pycache__/
+.env
+.DS_Store
+sample_docs/
+sample_docs_bulk/
+app/frontend/dist/
+app/frontend/node_modules/
