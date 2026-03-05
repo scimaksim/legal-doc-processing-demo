@@ -5,8 +5,14 @@
 
 # COMMAND ----------
 
-catalog = spark.conf.get("spark.databricks.bundle.variables.catalog", "classic_stable_tetifz_catalog")
-schema = spark.conf.get("spark.databricks.bundle.variables.schema", "legal_docs")
+try:
+    catalog = spark.conf.get("spark.databricks.bundle.variables.catalog")
+except Exception:
+    catalog = "classic_stable_tetifz_catalog"
+try:
+    schema = spark.conf.get("spark.databricks.bundle.variables.schema")
+except Exception:
+    schema = "legal_docs"
 
 # COMMAND ----------
 

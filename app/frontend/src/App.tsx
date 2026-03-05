@@ -8,6 +8,9 @@ import {
   Sparkles,
   Home,
   MessageCircleQuestion,
+  Gavel,
+  Receipt,
+  Landmark,
 } from 'lucide-react';
 import OverviewPage from './pages/OverviewPage';
 import DocumentBrowser from './pages/DocumentBrowser';
@@ -17,8 +20,11 @@ import UploadPage from './pages/UploadPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import KeyInsightsPage from './pages/KeyInsightsPage';
 import AskPage from './pages/AskPage';
+import SubpoenasPage from './pages/SubpoenasPage';
+import InvoicesPage from './pages/InvoicesPage';
+import RegulatoryPage from './pages/RegulatoryPage';
 
-type Page = 'overview' | 'browser' | 'viewer' | 'search' | 'upload' | 'analytics' | 'insights' | 'ask';
+type Page = 'overview' | 'browser' | 'viewer' | 'search' | 'upload' | 'analytics' | 'insights' | 'ask' | 'subpoenas' | 'invoices' | 'regulatory';
 
 function App() {
   const [page, setPage] = useState<Page>('overview');
@@ -39,7 +45,7 @@ function App() {
     else setPage(target as Page);
   };
 
-  const navItems: { id: Page; label: string; icon: React.ReactNode }[] = [
+  const navItems: { id: Page; label: string; icon: React.ReactNode; section?: string }[] = [
     { id: 'overview', label: 'Overview', icon: <Home /> },
     { id: 'browser', label: 'Documents', icon: <FileText /> },
     { id: 'insights', label: 'Key Insights', icon: <Sparkles /> },
@@ -47,6 +53,9 @@ function App() {
     { id: 'search', label: 'Search', icon: <Search /> },
     { id: 'upload', label: 'Upload', icon: <Upload /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 /> },
+    { id: 'subpoenas', label: 'Subpoenas', icon: <Gavel />, section: 'Specialized' },
+    { id: 'invoices', label: 'Invoices', icon: <Receipt /> },
+    { id: 'regulatory', label: 'Regulatory', icon: <Landmark /> },
   ];
 
   return (
@@ -61,14 +70,20 @@ function App() {
         </div>
         <nav className="sidebar-nav">
           {navItems.map((item) => (
-            <button
-              key={item.id}
-              className={`nav-item ${page === item.id || (item.id === 'browser' && page === 'viewer') ? 'active' : ''}`}
-              onClick={() => navigate(item.id)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
+            <div key={item.id}>
+              {item.section && (
+                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1.2, color: 'rgba(255,255,255,0.4)', padding: '16px 16px 6px', marginTop: 4 }}>
+                  {item.section}
+                </div>
+              )}
+              <button
+                className={`nav-item ${page === item.id || (item.id === 'browser' && page === 'viewer') ? 'active' : ''}`}
+                onClick={() => navigate(item.id)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            </div>
           ))}
         </nav>
       </aside>
@@ -84,6 +99,9 @@ function App() {
         {page === 'insights' && <KeyInsightsPage />}
         {page === 'ask' && <AskPage />}
         {page === 'analytics' && <AnalyticsPage />}
+        {page === 'subpoenas' && <SubpoenasPage />}
+        {page === 'invoices' && <InvoicesPage />}
+        {page === 'regulatory' && <RegulatoryPage />}
       </main>
     </div>
   );

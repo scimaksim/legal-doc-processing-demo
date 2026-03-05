@@ -74,6 +74,18 @@ resources:
           notebook_task:
             notebook_path: ./notebooks/05_extract_key_info.py
           environment_key: default
+        - task_key: generate_specialized_docs
+          depends_on:
+            - task_key: extract_key_info
+          notebook_task:
+            notebook_path: ./notebooks/06_generate_specialized_docs.py
+          environment_key: default
+        - task_key: extract_specialized
+          depends_on:
+            - task_key: generate_specialized_docs
+          notebook_task:
+            notebook_path: ./notebooks/07_extract_specialized.py
+          environment_key: default
       environments:
         - environment_key: default
           spec:

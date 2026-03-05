@@ -1,6 +1,6 @@
 # Legal Document Intelligence Platform on Databricks
 
-A production-ready demo for processing, parsing, and extracting structured insights from legal documents at scale using Databricks AI Functions (`ai_document_parse`, `ai_query`), Unity Catalog, and Databricks Apps.
+An end-to-end demo for processing, parsing, and extracting structured insights from legal documents at scale using Databricks AI Functions (`ai_document_parse`, `ai_query`), Unity Catalog, and Databricks Apps.
 
 **Live App**: [legal-doc-processor](https://legal-doc-processor-7474657121703767.aws.databricksapps.com)
 
@@ -51,7 +51,7 @@ This platform directly addresses three high-value automation opportunities in le
 
 ### 2. Cutting Manual Legal Ops Work (Subpoena Automation)
 
-**The Problem**: Subpoenas arrive as large PDFs with email attachments. Legal ops teams must manually extract required metadata — responding party, requesting party, data custodians, date ranges, document categories, production deadlines, court jurisdiction, case numbers — to initiate downstream processing. This metadata feeds into case management systems (e.g., Onit) to trigger review workflows. At scale, this manual extraction consumes **7,000+ hours annually**.
+**The Problem**: Subpoenas arrive as large PDFs with email attachments. Legal ops teams must manually extract required metadata — responding party, requesting party, data custodians, date ranges, document categories, production deadlines, court jurisdiction, case numbers — to initiate downstream processing. This metadata feeds into case management systems to trigger review workflows. At scale, this manual extraction consumes **thousands of hours annually**.
 
 **How This Platform Solves It**:
 
@@ -64,10 +64,10 @@ This platform directly addresses three high-value automation opportunities in le
   document_categories_requested[], production_deadline,
   preservation_requirements, special_instructions
   ```
-- **Downstream Integration**: Extracted fields populate the `extracted_key_info` table, which can feed Onit (or any system) via API or Databricks workflows
+- **Downstream Integration**: Extracted fields populate the `extracted_key_info` table, which can feed any case management system via API or Databricks workflows
 - **Natural Language Access**: Legal ops staff use the Ask page to query: *"Which subpoenas have production deadlines in the next 30 days?"* or *"List all subpoenas requesting data from custodian John Smith"*
 
-**Impact**: Automating subpoena intake at this level converts 7,000 hours of manual extraction into minutes of compute time per batch.
+**Impact**: Automating subpoena intake at this level converts thousands of hours of manual extraction into minutes of compute time per batch.
 
 ### 3. Scraping & Normalizing Regulatory Data
 
@@ -223,6 +223,8 @@ legal-doc-processing-demo/
     03_parse_documents.py           # ai_document_parse on all docs
     04_extract_elements.py          # Flatten parsed elements
     05_extract_key_info.py          # ai_query for structured extraction
+    06_generate_specialized_docs.py # Generate subpoenas, invoices, regulatory PDFs
+    07_extract_specialized.py       # Specialized extraction pipelines
   app/
     app.py                          # FastAPI entry point
     app.yaml                        # Databricks App config
