@@ -11,6 +11,9 @@ variables:
   warehouse_id:
     description: SQL warehouse ID for queries
     default: d09c046d71503257
+  genie_space_id:
+    description: Genie Space ID for natural language Q&A
+    default: 01f118d1043615e68733dc731144bc15
 
 sync:
   include:
@@ -33,6 +36,8 @@ resources:
             value: ${var.catalog}
           - name: SCHEMA
             value: ${var.schema}
+          - name: GENIE_SPACE_ID
+            value: ${var.genie_space_id}
       resources:
         - name: sql-warehouse
           sql_warehouse:
@@ -85,6 +90,12 @@ resources:
             - task_key: generate_specialized_docs
           notebook_task:
             notebook_path: ./notebooks/07_extract_specialized.py
+          environment_key: default
+        - task_key: setup_lakebase
+          depends_on:
+            - task_key: create_schema
+          notebook_task:
+            notebook_path: ./notebooks/08_setup_lakebase.py
           environment_key: default
       environments:
         - environment_key: default

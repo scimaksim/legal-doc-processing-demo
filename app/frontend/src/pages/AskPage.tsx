@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Database, MessageSquare, Loader2 } from 'lucide-react';
+import { Send, Database, MessageSquare, Loader2, Sparkles, Cpu } from 'lucide-react';
 
 interface QueryResult {
   question: string;
@@ -8,16 +8,18 @@ interface QueryResult {
   rows?: string[][];
   row_count?: number;
   error?: string;
+  text_response?: string;
+  source?: string;
 }
 
 const SAMPLE_QUESTIONS = [
   "Which documents have non-compete clauses longer than 12 months?",
+  "Show all invoices with compliance flags",
+  "Which subpoenas have production deadlines in the next 30 days?",
   "List all parties involved in NDAs",
-  "What are the total dollar amounts across all software license agreements?",
   "Which documents are governed by California law?",
-  "Show all risk flags for employment agreements",
-  "Which leases have security deposits over $200,000?",
-  "Find documents with termination notice periods of 90 days or more",
+  "What regulatory filings affect consumer lending?",
+  "Which invoices have the highest hourly rates?",
   "How many documents of each type do we have?",
 ];
 
@@ -25,6 +27,7 @@ function AskPage() {
   const [question, setQuestion] = useState('');
   const [history, setHistory] = useState<QueryResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<'genie' | 'ai_query'>('genie');
 
   const askQuestion = async (q?: string) => {
     const query = q || question;
@@ -33,17 +36,20 @@ function AskPage() {
     setLoading(true);
     setQuestion('');
 
+    const endpoint = mode === 'genie' ? '/api/genie/ask' : '/api/nlquery';
+
     try {
-      const res = await fetch('/api/nlquery', {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: query }),
       });
       const data = await res.json();
+      data.source = mode;
       setHistory((prev) => [data, ...prev]);
     } catch (err) {
       setHistory((prev) => [
-        { question: query, error: 'Failed to connect to server' },
+        { question: query, error: 'Failed to connect to server', source: mode },
         ...prev,
       ]);
     }
@@ -52,10 +58,47 @@ function AskPage() {
 
   return (
     <div className="page-content">
-      <h2 style={{ marginBottom: 4 }}>Ask Your Documents</h2>
-      <p style={{ color: '#666', marginBottom: 24, fontSize: 14 }}>
-        Ask natural language questions about your legal document portfolio. Powered by AI-generated SQL over your extracted data.
-      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+        <div>
+          <h2 style={{ marginBottom: 4 }}>Ask Your Documents</h2>
+          <p style={{ color: '#666', fontSize: 14 }}>
+            Ask natural language questions about your legal document portfolio.
+          </p>
+        </div>
+        {/* Mode toggle */}
+        <div style={{ display: 'flex', borderRadius: 8, border: '1px solid var(--gray-200)', overflow: 'hidden' }}>
+          <button
+            onClick={() => setMode('genie')}
+            style={{
+              padding: '8px 16px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+              background: mode === 'genie' ? 'var(--navy)' : 'white',
+              color: mode === 'genie' ? 'white' : 'var(--gray-700)',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            <Sparkles size={13} /> Genie
+          </button>
+          <button
+            onClick={() => setMode('ai_query')}
+            style={{
+              padding: '8px 16px', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer',
+              borderLeft: '1px solid var(--gray-200)',
+              background: mode === 'ai_query' ? 'var(--navy)' : 'white',
+              color: mode === 'ai_query' ? 'white' : 'var(--gray-700)',
+              display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            <Cpu size={13} /> ai_query
+          </button>
+        </div>
+      </div>
+
+      <div style={{ padding: '6px 12px', borderRadius: 6, background: mode === 'genie' ? '#eff6ff' : 'rgba(200,160,74,0.1)', fontSize: 12, marginBottom: 16, display: 'inline-block',
+        color: mode === 'genie' ? '#1e40af' : 'var(--gold-dark)', border: `1px solid ${mode === 'genie' ? '#bfdbfe' : 'rgba(200,160,74,0.3)'}` }}>
+        {mode === 'genie'
+          ? 'Using Genie Conversation API — optimized NL-to-SQL with table context'
+          : 'Using ai_query() with Foundation Model — direct text-to-SQL generation'}
+      </div>
 
       {/* Input */}
       <div
@@ -145,7 +188,7 @@ function AskPage() {
       {loading && (
         <div className="card" style={{ padding: 24, marginBottom: 16, textAlign: 'center', color: 'var(--slate)' }}>
           <Loader2 size={24} style={{ animation: 'spin 1s linear infinite', marginBottom: 8 }} />
-          <div>Generating and executing SQL query...</div>
+          <div>{mode === 'genie' ? 'Asking Genie...' : 'Generating and executing SQL query...'}</div>
         </div>
       )}
 
@@ -155,8 +198,19 @@ function AskPage() {
           {/* Question */}
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--gray-200)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <MessageSquare size={16} style={{ color: 'var(--gold)', flexShrink: 0 }} />
-            <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{result.question}</span>
+            <span style={{ fontWeight: 600, color: 'var(--navy)', flex: 1 }}>{result.question}</span>
+            <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 100, background: result.source === 'genie' ? '#eff6ff' : 'rgba(200,160,74,0.1)',
+              color: result.source === 'genie' ? '#2563eb' : 'var(--gold-dark)', fontWeight: 600 }}>
+              {result.source === 'genie' ? 'Genie' : 'ai_query'}
+            </span>
           </div>
+
+          {/* Text response from Genie */}
+          {result.text_response && (
+            <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--gray-200)', fontSize: 14, color: 'var(--gray-700)', lineHeight: 1.6 }}>
+              {result.text_response}
+            </div>
+          )}
 
           {/* Error */}
           {result.error && (

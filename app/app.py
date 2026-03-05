@@ -12,6 +12,8 @@ from server.routes.analytics import router as analytics_router
 from server.routes.extraction import router as extraction_router
 from server.routes.nlquery import router as nlquery_router
 from server.routes.specialized import router as specialized_router
+from server.routes.operations import router as operations_router
+from server.routes.genie import router as genie_router
 
 
 @asynccontextmanager
@@ -30,6 +32,8 @@ app.include_router(analytics_router)
 app.include_router(extraction_router)
 app.include_router(nlquery_router)
 app.include_router(specialized_router)
+app.include_router(operations_router)
+app.include_router(genie_router)
 
 
 @app.get("/api/health")
