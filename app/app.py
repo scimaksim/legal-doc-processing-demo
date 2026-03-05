@@ -10,6 +10,7 @@ from server.routes.documents import router as documents_router
 from server.routes.upload import router as upload_router
 from server.routes.analytics import router as analytics_router
 from server.routes.extraction import router as extraction_router
+from server.routes.nlquery import router as nlquery_router
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ app.include_router(documents_router)
 app.include_router(upload_router)
 app.include_router(analytics_router)
 app.include_router(extraction_router)
+app.include_router(nlquery_router)
 
 
 @app.get("/api/health")

@@ -10,6 +10,7 @@ import {
   Layers,
   ScanText,
   BrainCircuit,
+  MessageCircleQuestion,
 } from 'lucide-react';
 
 interface OverviewPageProps {
@@ -211,6 +212,13 @@ function OverviewPage({ onNavigate }: OverviewPageProps) {
             title: 'Key Insights',
             desc: 'AI-extracted structured data from each document: parties, dates, financial terms, governing law, key obligations, and flagged risks — all in one view.',
             page: 'insights',
+            color: 'var(--gold-dark)',
+          },
+          {
+            icon: <MessageCircleQuestion size={20} />,
+            title: 'Ask Your Documents',
+            desc: 'Natural language Q&A powered by AI-generated SQL. Ask "Which NDAs expire this year?" or "Show all contracts with liability caps under $1M" and get instant answers.',
+            page: 'ask',
             color: 'var(--gold-dark)',
           },
           {

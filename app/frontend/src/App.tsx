@@ -7,6 +7,7 @@ import {
   Scale,
   Sparkles,
   Home,
+  MessageCircleQuestion,
 } from 'lucide-react';
 import OverviewPage from './pages/OverviewPage';
 import DocumentBrowser from './pages/DocumentBrowser';
@@ -15,8 +16,9 @@ import SearchPage from './pages/SearchPage';
 import UploadPage from './pages/UploadPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import KeyInsightsPage from './pages/KeyInsightsPage';
+import AskPage from './pages/AskPage';
 
-type Page = 'overview' | 'browser' | 'viewer' | 'search' | 'upload' | 'analytics' | 'insights';
+type Page = 'overview' | 'browser' | 'viewer' | 'search' | 'upload' | 'analytics' | 'insights' | 'ask';
 
 function App() {
   const [page, setPage] = useState<Page>('overview');
@@ -41,6 +43,7 @@ function App() {
     { id: 'overview', label: 'Overview', icon: <Home /> },
     { id: 'browser', label: 'Documents', icon: <FileText /> },
     { id: 'insights', label: 'Key Insights', icon: <Sparkles /> },
+    { id: 'ask', label: 'Ask', icon: <MessageCircleQuestion /> },
     { id: 'search', label: 'Search', icon: <Search /> },
     { id: 'upload', label: 'Upload', icon: <Upload /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 /> },
@@ -79,6 +82,7 @@ function App() {
         {page === 'search' && <SearchPage onOpenDocument={openDocument} />}
         {page === 'upload' && <UploadPage />}
         {page === 'insights' && <KeyInsightsPage />}
+        {page === 'ask' && <AskPage />}
         {page === 'analytics' && <AnalyticsPage />}
       </main>
     </div>
