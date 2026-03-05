@@ -68,6 +68,10 @@ with Diagram(
         # Governance
         uc = Custom("Unity Catalog\nGovernance & Lineage", f"{ICONS}/databricks/unity_catalog.png")
 
+        # AI/BI Dashboard
+        with Cluster("AI/BI Dashboard", graph_attr={"bgcolor": "#e0e7ff", "style": "rounded", "pencolor": "#4f46e5", "fontsize": "12"}):
+            aibi = Custom("Matter Overview\nBilling Audit\nCompliance & Risk", f"{ICONS}/databricks/sql_warehouse.png")
+
     # === APPLICATION ===
     with Cluster("Databricks App (React + FastAPI)", graph_attr={"bgcolor": "#f1f5f9", "style": "rounded", "pencolor": "#64748b", "fontsize": "13", "fontname": "Helvetica Bold"}):
         app = Custom("Document Browser\nKey Insights\nAsk (Genie)", f"{ICONS}/databricks/workspace.png")
@@ -108,9 +112,13 @@ with Diagram(
     # Lakebase to warehouse
     lakebase >> Edge(label="OLTP\nWorkflows", color="#ca8a04") >> warehouse
 
-    # Warehouse to app
+    # Warehouse to app and AI/BI Dashboard
     warehouse >> Edge(color="#64748b") >> app
     warehouse >> Edge(color="#64748b") >> app_ops
+    warehouse >> Edge(color="#4f46e5") >> aibi
+
+    # AI/BI Dashboard embedded in app
+    aibi >> Edge(label="Embedded", color="#4f46e5", style="dashed") >> app
 
     # Genie
     app >> Edge(label="NL Query", color="#a855f7", style="dashed") >> genie
