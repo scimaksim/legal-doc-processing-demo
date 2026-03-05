@@ -7,7 +7,7 @@ from server.config import get_workspace_host, get_auth_token
 
 router = APIRouter(prefix="/api/genie", tags=["genie"])
 
-GENIE_SPACE_ID = os.environ.get("GENIE_SPACE_ID", "01f118d1043615e68733dc731144bc15")
+GENIE_SPACE_ID = os.environ.get("GENIE_SPACE_ID", "01f118d36720174ea93e7887cf6e2b45")
 
 
 @router.post("/ask")

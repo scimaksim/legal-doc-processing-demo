@@ -1,9 +1,27 @@
 """Analytics dashboard API routes."""
+import os
 from fastapi import APIRouter
 from server.sql_client import execute_sql_as_dicts
-from server.config import ELEMENTS_TABLE
+from server.config import ELEMENTS_TABLE, get_workspace_host
 
 router = APIRouter(prefix="/api/analytics", tags=["analytics"])
+
+LAKEVIEW_DASHBOARD_ID = os.environ.get(
+    "LAKEVIEW_DASHBOARD_ID", "01f118d438a118b2ac23e883dff6e16f"
+)
+
+
+@router.get("/dashboard-embed")
+async def get_dashboard_embed():
+    """Return the Lakeview dashboard embed URL."""
+    host = get_workspace_host()
+    embed_url = f"{host}/embed/dashboardsv3/{LAKEVIEW_DASHBOARD_ID}"
+    dashboard_url = f"{host}/sql/dashboardsv3/{LAKEVIEW_DASHBOARD_ID}"
+    return {
+        "embed_url": embed_url,
+        "dashboard_url": dashboard_url,
+        "dashboard_id": LAKEVIEW_DASHBOARD_ID,
+    }
 
 
 @router.get("/overview")

@@ -127,6 +127,9 @@ Traces are stored in Unity Catalog and queryable via SQL, enabling dashboards th
 | UC Volumes | Managed storage for raw PDF documents |
 | Delta Tables | Versioned, ACID-compliant storage for all parsed/extracted data |
 | SQL Warehouse (Serverless) | Query execution for the app and analytics |
+| Lakebase (OLTP) | Operational workflows — subpoena tracking, invoice reviews |
+| Genie Conversation API | Natural language Q&A over legal document tables |
+| AI/BI Dashboards | Embedded analytics — matter overview, billing audit, compliance tracking |
 | Databricks Apps | Hosted React + FastAPI application |
 | Databricks Jobs | Batch processing pipeline for document ingestion |
 | MLflow Tracing | AI call observability, cost tracking, compliance audit trail |

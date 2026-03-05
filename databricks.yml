@@ -13,7 +13,10 @@ variables:
     default: d09c046d71503257
   genie_space_id:
     description: Genie Space ID for natural language Q&A
-    default: 01f118d1043615e68733dc731144bc15
+    default: 01f118d36720174ea93e7887cf6e2b45
+  lakeview_dashboard_id:
+    description: Lakeview Dashboard ID for analytics
+    default: 01f118d438a118b2ac23e883dff6e16f
 
 sync:
   include:
@@ -38,6 +41,8 @@ resources:
             value: ${var.schema}
           - name: GENIE_SPACE_ID
             value: ${var.genie_space_id}
+          - name: LAKEVIEW_DASHBOARD_ID
+            value: ${var.lakeview_dashboard_id}
       resources:
         - name: sql-warehouse
           sql_warehouse:
