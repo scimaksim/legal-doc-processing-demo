@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Send, Database, MessageSquare, Loader2, Sparkles, Cpu } from 'lucide-react';
+import { Send, Database, MessageSquare, Loader2, Sparkles, Cpu, ChevronDown, ChevronRight } from 'lucide-react';
 
 interface QueryResult {
   question: string;
@@ -22,6 +22,129 @@ const SAMPLE_QUESTIONS = [
   "Which invoices have the highest hourly rates?",
   "How many documents of each type do we have?",
 ];
+
+/** Render simple markdown: **bold**, - list items, line breaks */
+function renderMarkdown(text: string) {
+  const lines = text.split(/\n/);
+  const elements: React.ReactNode[] = [];
+  let listItems: React.ReactNode[] = [];
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      elements.push(<ul key={`ul-${elements.length}`} style={{ margin: '8px 0', paddingLeft: 20 }}>{listItems}</ul>);
+      listItems = [];
+    }
+  };
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('- ') || trimmed.startsWith('• ')) {
+      const content = trimmed.replace(/^[-•]\s*/, '');
+      listItems.push(<li key={i} style={{ marginBottom: 4 }}>{renderInline(content)}</li>);
+    } else {
+      flushList();
+      if (trimmed === '') {
+        if (elements.length > 0) elements.push(<br key={`br-${i}`} />);
+      } else {
+        elements.push(<p key={i} style={{ margin: '4px 0' }}>{renderInline(trimmed)}</p>);
+      }
+    }
+  });
+  flushList();
+  return <>{elements}</>;
+}
+
+/** Render inline markdown: **bold** */
+function renderInline(text: string): React.ReactNode {
+  const parts: React.ReactNode[] = [];
+  const regex = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(<strong key={match.index}>{match[1]}</strong>);
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts.length === 1 ? parts[0] : <>{parts}</>;
+}
+
+/** Simple SQL formatter — adds line breaks and indentation for readability */
+function formatSql(sql: string): string {
+  // Normalize whitespace
+  let s = sql.replace(/\s+/g, ' ').trim();
+  // Add newlines before major keywords
+  const keywords = ['SELECT', 'FROM', 'WHERE', 'GROUP BY', 'ORDER BY', 'HAVING', 'LIMIT', 'JOIN', 'LEFT JOIN', 'RIGHT JOIN', 'INNER JOIN', 'OUTER JOIN', 'ON', 'AND', 'OR', 'UNION', 'EXCEPT', 'INTERSECT', 'WITH', 'AS \\('];
+  for (const kw of keywords) {
+    const regex = new RegExp(`\\b(${kw})\\b`, 'gi');
+    s = s.replace(regex, '\n$1');
+  }
+  // Indent non-keyword lines
+  const lines = s.split('\n').filter(l => l.trim());
+  const majorKw = /^(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|LIMIT|WITH|UNION|EXCEPT|INTERSECT)\b/i;
+  return lines.map(line => {
+    const trimmed = line.trim();
+    return majorKw.test(trimmed) ? trimmed : '  ' + trimmed;
+  }).join('\n');
+}
+
+/** Render SQL with keyword highlighting */
+function highlightSql(sql: string) {
+  const formatted = formatSql(sql);
+  const kwPattern = /\b(SELECT|FROM|WHERE|GROUP BY|ORDER BY|HAVING|LIMIT|JOIN|LEFT|RIGHT|INNER|OUTER|ON|AND|OR|AS|IN|IS|NOT|NULL|LIKE|BETWEEN|CASE|WHEN|THEN|ELSE|END|COUNT|SUM|AVG|MAX|MIN|DISTINCT|DESC|ASC|CAST|LOWER|UPPER|ROUND|CONCAT|COALESCE|UNION|WITH|REGEXP_REPLACE)\b/gi;
+  const parts = formatted.split(kwPattern);
+  return parts.map((part, i) => {
+    if (kwPattern.test(part)) {
+      return <span key={i} style={{ color: '#7dd3fc', fontWeight: 600 }}>{part.toUpperCase()}</span>;
+    }
+    // Highlight strings
+    const strParts = part.split(/('(?:[^'\\]|\\.)*')/g);
+    return strParts.map((sp, j) =>
+      sp.startsWith("'") ? <span key={`${i}-${j}`} style={{ color: '#fbbf24' }}>{sp}</span> : sp
+    );
+  });
+}
+
+function SqlToggle({ sql }: { sql: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ padding: '8px 20px', borderBottom: '1px solid var(--gray-200)' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+          color: 'var(--slate)', fontSize: 11, fontWeight: 600,
+          textTransform: 'uppercase', letterSpacing: 0.5,
+        }}
+      >
+        {open ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        <Database size={12} /> Generated SQL
+      </button>
+      {open && (
+        <pre style={{
+          background: '#0f172a',
+          color: '#e2e8f0',
+          padding: '16px 20px',
+          borderRadius: 'var(--radius)',
+          fontSize: 13,
+          lineHeight: 1.6,
+          overflow: 'auto',
+          maxHeight: 300,
+          whiteSpace: 'pre',
+          marginTop: 8,
+          fontFamily: "'JetBrains Mono', 'Fira Code', 'Cascadia Code', Consolas, monospace",
+        }}>
+          {highlightSql(sql)}
+        </pre>
+      )}
+    </div>
+  );
+}
 
 function AskPage() {
   const [question, setQuestion] = useState('');
@@ -205,10 +328,10 @@ function AskPage() {
             </span>
           </div>
 
-          {/* Text response from Genie */}
+          {/* Text response — rendered as formatted markdown */}
           {result.text_response && (
             <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--gray-200)', fontSize: 14, color: 'var(--gray-700)', lineHeight: 1.6 }}>
-              {result.text_response}
+              {renderMarkdown(result.text_response)}
             </div>
           )}
 
@@ -219,27 +342,8 @@ function AskPage() {
             </div>
           )}
 
-          {/* SQL */}
-          {result.sql && (
-            <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--gray-200)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: 'var(--slate)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-                <Database size={12} /> Generated SQL
-              </div>
-              <pre style={{
-                background: 'var(--navy-dark)',
-                color: '#e2e8f0',
-                padding: '12px 16px',
-                borderRadius: 'var(--radius)',
-                fontSize: 12,
-                lineHeight: 1.5,
-                overflow: 'auto',
-                maxHeight: 200,
-                whiteSpace: 'pre-wrap',
-              }}>
-                {result.sql}
-              </pre>
-            </div>
-          )}
+          {/* SQL — collapsed by default */}
+          {result.sql && <SqlToggle sql={result.sql} />}
 
           {/* Results table */}
           {result.columns && result.rows && (

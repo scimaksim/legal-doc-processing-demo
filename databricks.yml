@@ -13,7 +13,7 @@ variables:
     default: d09c046d71503257
   genie_space_id:
     description: Genie Space ID for natural language Q&A
-    default: 01f118d36720174ea93e7887cf6e2b45
+    default: 01f118d77b701e2481ef40bf128839a3
   lakeview_dashboard_id:
     description: Lakeview Dashboard ID for analytics
     default: 01f118d438a118b2ac23e883dff6e16f
