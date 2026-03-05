@@ -29,7 +29,7 @@ Document Sources           AI Processing                  Structured Storage    
 
 ## Solving Real Legal Operations Pain Points
 
-This platform directly addresses three high-value automation opportunities in legal departments:
+This platform directly addresses critical challenges in legal departments:
 
 ### 1. Reducing Outside Counsel Spend
 
@@ -88,6 +88,21 @@ This platform directly addresses three high-value automation opportunities in le
 
 **Why AI matters here**: Web scraping gets the bytes. `ai_document_parse()` + `ai_query()` turn inconsistent bytes into reliable, structured, queryable data — the delta between "we have the data" and "we can use the data."
 
+### 4. Protecting Sensitive Legal Data with Granular Permissions
+
+Legal documents are among the most sensitive assets in any organization — attorney-client privileged communications, sealed court filings, confidential settlement terms, PII-laden subpoenas, and proprietary contract terms. A platform that processes these documents must enforce need-to-know access at every layer.
+
+**How Unity Catalog Solves This**:
+
+- **Row-level security**: Restrict which matters, clients, or jurisdictions a user can see. A paralegal working on employment disputes never sees M&A deal terms. A regional counsel sees only their jurisdiction's subpoenas
+- **Column-level masking**: Mask dollar amounts, party names, or custodian PII for users who need document metadata but not the sensitive fields. Billing analysts see invoice totals but not privilege-flagged narrative descriptions
+- **Volume-level ACLs**: Raw PDFs in UC Volumes are access-controlled separately from extracted data. Outside counsel can upload documents without seeing other firms' submissions
+- **Table-level grants**: `extracted_subpoenas` restricted to litigation teams. `extracted_invoices` restricted to billing/finance. `extracted_regulatory` open to compliance but not general counsel
+- **Attribute-based access (ABAC)**: Tag tables and columns with sensitivity labels (`PII`, `attorney-client-privilege`, `confidential-settlement`) and enforce policies based on user attributes — department, clearance level, matter assignment
+- **Audit trail**: Every query, every access, every export is logged in Unity Catalog's audit tables — critical for demonstrating compliance with legal holds, court orders, and regulatory examinations
+
+**Why this matters**: SaaS legal AI tools give you a binary choice — access or no access. Unity Catalog lets you grant a contract analyst access to governing law and termination dates while masking the dollar amounts and risk flags that only senior partners should see. The same data, governed differently for every role.
+
 ## App Features
 
 | Page | Description |
@@ -98,7 +113,10 @@ This platform directly addresses three high-value automation opportunities in le
 | **Ask** | Natural language Q&A (Genie-style) — ask questions, get AI-generated SQL + results |
 | **Search** | Full-text search across all document content with highlighted matches |
 | **Upload** | Drag-and-drop PDF upload with automatic parsing pipeline |
-| **Analytics** | Document statistics, element type distribution, and comparison charts |
+| **Subpoenas** | Subpoena tracker — case details, production deadlines, custodians, compliance risk levels |
+| **Invoices** | Invoice auditor — firm billing, hourly rates, line items, compliance flags |
+| **Regulatory** | Regulatory filings — agency, compliance requirements, penalties, comment deadlines |
+| **Analytics** | Embedded AI/BI Dashboard (matter overview, billing audit, compliance tracking) with element detail charts |
 
 ## Observability with MLflow Tracing
 
@@ -147,7 +165,7 @@ Traces are stored in Unity Catalog and queryable via SQL, enabling dashboards th
 
 ```bash
 # Clone
-git clone https://github.com/maksim-nikiforov_data/legal-doc-processing-demo.git
+git clone https://github.com/scimaksim/legal-doc-processing-demo.git
 cd legal-doc-processing-demo
 
 # Build frontend
@@ -241,6 +259,10 @@ legal-doc-processing-demo/
     05_extract_key_info.py          # ai_query for structured extraction
     06_generate_specialized_docs.py # Generate subpoenas, invoices, regulatory PDFs
     07_extract_specialized.py       # Specialized extraction pipelines
+    08_setup_lakebase.py            # Create Lakebase tables for operational workflows
+  scripts/
+    create_genie_space.py           # Create Genie Space for NL Q&A
+    create_lakeview_dashboard.py    # Create AI/BI Dashboard
   app/
     app.py                          # FastAPI entry point
     app.yaml                        # Databricks App config
@@ -251,9 +273,12 @@ legal-doc-processing-demo/
       routes/
         documents.py                # Document list, detail, search
         extraction.py               # Extracted key info endpoints
+        specialized.py              # Subpoena, invoice, regulatory endpoints
+        operations.py               # Lakebase operational workflow endpoints
+        genie.py                    # Genie Conversation API integration
         nlquery.py                  # Natural language → SQL → results
         upload.py                   # PDF upload + parse pipeline
-        analytics.py                # Statistics endpoints
+        analytics.py                # Statistics + AI/BI Dashboard embed
     frontend/
       src/
         App.tsx                     # Main app with sidebar nav
@@ -262,12 +287,17 @@ legal-doc-processing-demo/
           DocumentBrowser.tsx       # Document list
           DocumentViewer.tsx        # Element viewer
           KeyInsightsPage.tsx       # Extracted fields
-          AskPage.tsx               # NL query interface
+          AskPage.tsx               # NL query interface (Genie)
           SearchPage.tsx            # Full-text search
           UploadPage.tsx            # Upload interface
-          AnalyticsPage.tsx         # Charts + stats
+          SubpoenasPage.tsx         # Subpoena tracker
+          InvoicesPage.tsx          # Invoice auditor
+          RegulatoryPage.tsx        # Regulatory filings viewer
+          AnalyticsPage.tsx         # Embedded AI/BI Dashboard + charts
   docs/
     architecture.png                # Architecture diagram
+    architecture_diagram.py         # Diagram source (Python/diagrams)
+    demo.gif                        # App demo recording
 ```
 
 ## Why Databricks vs. Point Solutions (e.g., Clio, CoCounsel)
