@@ -2,10 +2,7 @@
 from diagrams import Diagram, Cluster, Edge
 from diagrams.custom import Custom
 from diagrams.onprem.client import User
-from diagrams.programming.framework import React
-from diagrams.programming.language import Python
 from diagrams.generic.storage import Storage
-from diagrams.generic.database import SQL
 import os
 
 ICONS = "/Users/maksim.nikiforov/.claude/plugins/cache/fe-vibe/fe-workflows/1.2.9/skills/fe-architecture-diagram/resources/icons"
@@ -18,8 +15,8 @@ with Diagram(
     direction="LR",
     graph_attr={
         "splines": "polyline",
-        "nodesep": "0.8",
-        "ranksep": "1.8",
+        "nodesep": "0.7",
+        "ranksep": "1.6",
         "pad": "0.8",
         "fontsize": "18",
         "bgcolor": "white",
@@ -28,11 +25,11 @@ with Diagram(
         "labeljust": "c",
     },
     node_attr={
-        "fontsize": "11",
+        "fontsize": "10",
         "fontname": "Helvetica",
     },
     edge_attr={
-        "fontsize": "9",
+        "fontsize": "8",
         "fontname": "Helvetica",
         "color": "#475569",
     },
@@ -40,7 +37,7 @@ with Diagram(
 
     # === DATA SOURCES ===
     with Cluster("Document Sources", graph_attr={"bgcolor": "#fef3c7", "style": "rounded", "pencolor": "#d97706", "fontsize": "13", "fontname": "Helvetica Bold"}):
-        subpoenas = Storage("Subpoenas\n& Legal Filings")
+        subpoenas = Storage("Subpoenas")
         invoices = Storage("Outside Counsel\nInvoices")
         contracts = Storage("Contracts\n& Agreements")
         regulatory = Storage("Regulatory\nFilings")
@@ -53,23 +50,28 @@ with Diagram(
             volumes = Custom("UC Volumes\n(Raw PDFs)", f"{ICONS}/databricks/unity_catalog.png")
 
         # AI Processing
-        with Cluster("AI Processing", graph_attr={"bgcolor": "#fae8ff", "style": "rounded", "pencolor": "#a855f7", "fontsize": "12"}):
+        with Cluster("AI Processing (Foundation Models)", graph_attr={"bgcolor": "#fae8ff", "style": "rounded", "pencolor": "#a855f7", "fontsize": "12"}):
             parse = Custom("ai_document_parse()\nPDF → Elements", f"{ICONS}/databricks/model_serving.png")
-            extract = Custom("ai_query()\nKey Info Extraction", f"{ICONS}/databricks/model_serving.png")
-            txt2sql = Custom("ai_query()\nText-to-SQL", f"{ICONS}/databricks/model_serving.png")
+            extract = Custom("ai_query()\nSpecialized Extraction", f"{ICONS}/databricks/model_serving.png")
+            genie = Custom("Genie\nConversation API", f"{ICONS}/databricks/model_serving.png")
 
-        # Storage
+        # Delta Storage
         with Cluster("Delta Tables (Unity Catalog)", graph_attr={"bgcolor": "#dcfce7", "style": "rounded", "pencolor": "#16a34a", "fontsize": "12"}):
-            parsed_tbl = Custom("parsed_documents", f"{ICONS}/databricks/delta_lake.png")
-            elements_tbl = Custom("document_elements", f"{ICONS}/databricks/delta_lake.png")
-            keyinfo_tbl = Custom("extracted_key_info", f"{ICONS}/databricks/delta_lake.png")
+            parsed_tbl = Custom("parsed_documents\ndocument_elements", f"{ICONS}/databricks/delta_lake.png")
+            keyinfo_tbl = Custom("extracted_key_info\nextracted_subpoenas", f"{ICONS}/databricks/delta_lake.png")
+            inv_reg_tbl = Custom("extracted_invoices\nextracted_regulatory", f"{ICONS}/databricks/delta_lake.png")
+
+        # Lakebase
+        with Cluster("Lakebase (OLTP)", graph_attr={"bgcolor": "#fef9c3", "style": "rounded", "pencolor": "#ca8a04", "fontsize": "12"}):
+            lakebase = Custom("subpoena_tracking\ninvoice_reviews", f"{ICONS}/databricks/delta_lake.png")
 
         # Governance
         uc = Custom("Unity Catalog\nGovernance & Lineage", f"{ICONS}/databricks/unity_catalog.png")
 
     # === APPLICATION ===
-    with Cluster("Databricks App", graph_attr={"bgcolor": "#fef9c3", "style": "rounded", "pencolor": "#ca8a04", "fontsize": "13", "fontname": "Helvetica Bold"}):
-        app = Custom("React + FastAPI\nSQL Statements API", f"{ICONS}/databricks/workspace.png")
+    with Cluster("Databricks App (React + FastAPI)", graph_attr={"bgcolor": "#f1f5f9", "style": "rounded", "pencolor": "#64748b", "fontsize": "13", "fontname": "Helvetica Bold"}):
+        app = Custom("Document Browser\nKey Insights\nAsk (Genie)", f"{ICONS}/databricks/workspace.png")
+        app_ops = Custom("Subpoena Tracker\nInvoice Auditor\nRegulatory View", f"{ICONS}/databricks/workspace.png")
         warehouse = Custom("Serverless\nSQL Warehouse", f"{ICONS}/databricks/sql_warehouse.png")
 
     # === USERS ===
@@ -87,25 +89,33 @@ with Diagram(
 
     # Parse -> Tables
     parse >> Edge(label="Structured\nElements", color="#a855f7") >> parsed_tbl
-    parsed_tbl >> Edge(color="#16a34a") >> elements_tbl
 
     # Extract
-    elements_tbl >> Edge(label="Full Text", color="#a855f7") >> extract
-    extract >> Edge(label="Parties, Dates\n$, Risks", color="#a855f7") >> keyinfo_tbl
+    parsed_tbl >> Edge(label="Full Text", color="#a855f7") >> extract
+    extract >> Edge(label="Contracts, Subpoenas\nInvoices, Regulatory", color="#a855f7") >> keyinfo_tbl
+    extract >> Edge(color="#a855f7") >> inv_reg_tbl
 
     # Governance
     parsed_tbl >> Edge(style="dashed", color="#16a34a") >> uc
-    elements_tbl >> Edge(style="dashed", color="#16a34a") >> uc
     keyinfo_tbl >> Edge(style="dashed", color="#16a34a") >> uc
+    inv_reg_tbl >> Edge(style="dashed", color="#16a34a") >> uc
+    lakebase >> Edge(style="dashed", color="#ca8a04") >> uc
 
-    # App queries
-    keyinfo_tbl >> Edge(color="#ca8a04") >> warehouse
-    elements_tbl >> Edge(color="#ca8a04") >> warehouse
-    warehouse >> Edge(color="#ca8a04") >> app
+    # App queries - Delta tables to warehouse
+    keyinfo_tbl >> Edge(color="#64748b") >> warehouse
+    inv_reg_tbl >> Edge(color="#64748b") >> warehouse
 
-    # Text-to-SQL
-    app >> Edge(label="NL Query", color="#a855f7", style="dashed") >> txt2sql
-    txt2sql >> Edge(label="Generated SQL", color="#a855f7", style="dashed") >> warehouse
+    # Lakebase to warehouse
+    lakebase >> Edge(label="OLTP\nWorkflows", color="#ca8a04") >> warehouse
+
+    # Warehouse to app
+    warehouse >> Edge(color="#64748b") >> app
+    warehouse >> Edge(color="#64748b") >> app_ops
+
+    # Genie
+    app >> Edge(label="NL Query", color="#a855f7", style="dashed") >> genie
+    genie >> Edge(label="Generated SQL", color="#a855f7", style="dashed") >> warehouse
 
     # User
     user >> Edge(color="#475569") >> app
+    user >> Edge(color="#475569") >> app_ops
